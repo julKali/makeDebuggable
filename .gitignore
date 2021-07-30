@@ -1,3 +1,5 @@
 __pycache__/
 *.xml
 *.apk
+.old/
+*.keystore
