@@ -6,6 +6,7 @@ import sys
 from struct import pack, unpack
 from zipfile import ZipFile
 import subprocess
+from shutil import which
 
 COMMON_HEADER_LEN = 8
 CHUNK_TYPE_STRINGPOOL = 0x1
@@ -558,7 +559,9 @@ def patchApk(fnIn, fnOut, keystore, keyAlias):
     outZip.close()
 
     print("Signing ...")
-    subprocess.run(['apksigner', 'sign', '--ks', keystore, '--ks-key-alias', keyAlias, outZip.filename], shell=True, )
+    apksignerLoc = which("apksigner")
+    print("Using apksigner at " + apksignerLoc)
+    subprocess.run([apksignerLoc, "sign", "--ks", keystore, "--ks-key-alias", keyAlias, outZip.filename])
 
 if __name__ == "__main__":
     option = sys.argv[1]
