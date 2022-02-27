@@ -2,6 +2,7 @@
 # https://cs.android.com/android/platform/superproject/+/master:frameworks/base/libs/androidfw/include/androidfw/ResourceTypes.h
 
 from io import BytesIO, SEEK_CUR
+import os
 import sys
 from struct import pack, unpack
 from zipfile import ZipFile
@@ -535,7 +536,7 @@ def extractToDir(zfn, dir):
      
 def patchApk(fnIn, fnOut, keystore, keyAlias):
     inZip = ZipFile(fnIn, "r")
-    outZip = ZipFile(fnOut, "w")
+    outZip = ZipFile(fnOut + ".tmp", "w")
 
     print("Patching AndroidManifest.xml ...")
     androidManifestPath = "AndroidManifest.xml"
@@ -558,10 +559,41 @@ def patchApk(fnIn, fnOut, keystore, keyAlias):
     inZip.close()
     outZip.close()
 
-    print("Signing ...")
+    zipAlignLoc = which("zipalign")
+    if not zipAlignLoc:
+        print("zipalign not found in path, aborting.")
+        sys.exit(1)
+    print("Using zipalign at " + zipAlignLoc)
+
+    print("Aligning...")
+    if subprocess.run([zipAlignLoc, "-p", "-v", "4", outZip.filename, fnOut]).returncode != 0:
+        print("zipalign failed, aborting.")
+        sys.exit(1)
+
+    print("Verifying alignment...")
+    if subprocess.run([zipAlignLoc, "-c", "-v", "4", fnOut]).returncode != 0:
+        print("Alignment verification failed, aborting.")
+        sys.exit(1)
+
     apksignerLoc = which("apksigner")
+    if not apksignerLoc:
+        print("apksigner not found in path, aborting.")
+        sys.exit(1)
     print("Using apksigner at " + apksignerLoc)
-    subprocess.run([apksignerLoc, "sign", "--ks", keystore, "--ks-key-alias", keyAlias, outZip.filename])
+
+    print("Signing...")
+    if subprocess.run([apksignerLoc, "sign", "--ks", keystore, "--ks-key-alias", keyAlias, fnOut]).returncode != 0:
+        print("apksigner failed, aborting.")
+        sys.exit(1)
+
+    print("Verifying signature...")
+    if subprocess.run([apksignerLoc, "verify", fnOut]).returncode != 0:
+        print("Signature verification failed, aborting.")
+        sys.exit(1)
+
+    print("Removing temporary file...")
+    os.remove(outZip.filename)
+
 
 if __name__ == "__main__":
     option = sys.argv[1]
