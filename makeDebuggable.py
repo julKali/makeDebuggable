@@ -1,3 +1,6 @@
+#!/usr/bin/env python3
+
+
 # parsing information from
 # https://cs.android.com/android/platform/superproject/+/master:frameworks/base/libs/androidfw/include/androidfw/ResourceTypes.h
 
@@ -155,11 +158,11 @@ def patchStringPool(f, strPoolInfo, fOut, insertionIdx):
 
     if f.tell() != startOffset + strPoolInfo["chunkInfo"]["commonHeader"]["headerSize"] + UINT32_LENGTH * strPoolInfo["stringCount"]:
         raise Exception("sanity check {} {}".format(f.tell(), startOffset + strPoolInfo["chunkInfo"]["commonHeader"]["headerSize"] + UINT32_LENGTH * strPoolInfo["stringCount"]))
-    
+
     # write style index table if there is any
     if strPoolInfo["styleCount"] > 0:
         fOut.write(f.read(strPoolInfo["styleCount"] * UINT32_LENGTH))
-    
+
     # in case there is some padding, copy that too
     fOut.write(f.read(startOffset + strPoolInfo["stringsStart"] - f.tell()))
 
@@ -187,7 +190,7 @@ def calculateResMapLength(chunkInfo):
 def findDebuggablResIndices(f, resmapInfo):
     if resmapInfo["chunkInfo"] == None:
         return [] # chunk is empty
-    
+
     startPos = resmapInfo["chunkInfo"]["startOffset"]
     f.seek(startPos + resmapInfo["chunkInfo"]["headerSize"])
     indices = []
@@ -196,7 +199,7 @@ def findDebuggablResIndices(f, resmapInfo):
         resId = readInt(f, 1)
         if resId == DEBUGGABLE_RES_ID:
             indices.append[i]
-    
+
     return indices
 
 # following three methods are mostly copied from androguard
@@ -307,7 +310,7 @@ def readResId(f, resmapInfo, idx):
         return None
     pos = f.tell()
     f.seek(resmapInfo["chunkInfo"]["startOffset"] + resmapInfo["chunkInfo"]["commonHeader"]["headerSize"] + idx * UINT32_LENGTH)
-    resId = readInt(f, 1)    
+    resId = readInt(f, 1)
     f.seek(pos)
     return resId
 
@@ -438,7 +441,7 @@ def findAndroidNsIdx(fIn, strPoolInfo):
             return i
     raise Exception("No android ns found ...")
 
-# in order for the application to be counted as debuggable the application 
+# in order for the application to be counted as debuggable the application
 # tag needs to contain an attribute whose resource id is debuggable res id
 # thus, the name value must be X with resmap[x] = deuggable res id and strings[x] = "debuggable"
 # within the application tag, attributes must be sorted by res id
@@ -520,7 +523,7 @@ def patchManifest(fIn, fOut):
                 patchApplicationElement(fIn, chunkInfo, androidNsId, debuggableStringId, fOut, resmapInfo)
             else:
                 patchChunk(fIn, chunkInfo, fOut, debuggableStringId)
-            i += 1  
+            i += 1
 
 def patchManifestByFilename(fnIn, fnOut):
     with BytesIO() as tmp:
@@ -533,8 +536,8 @@ def patchManifestByFilename(fnIn, fnOut):
 def extractToDir(zfn, dir):
     with ZipFile(zfn, "r") as zf:
         zf.extractall(dir)
-     
-def patchApk(fnIn, fnOut, keystore, keyAlias):
+
+def patchApk(fnIn, fnOut, keystore, keyAlias, keystorePass):
     inZip = ZipFile(fnIn, "r")
     outZip = ZipFile(fnOut + ".tmp", "w")
 
@@ -582,7 +585,7 @@ def patchApk(fnIn, fnOut, keystore, keyAlias):
     print("Using apksigner at " + apksignerLoc)
 
     print("Signing...")
-    if subprocess.run([apksignerLoc, "sign", "--ks", keystore, "--ks-key-alias", keyAlias, fnOut]).returncode != 0:
+    if subprocess.run([apksignerLoc, "sign", "--ks", keystore, "--ks-key-alias", keyAlias, "--ks-pass", f"pass:{keystorePass}", fnOut]).returncode != 0:
         print("apksigner failed, aborting.")
         sys.exit(1)
 
@@ -605,6 +608,6 @@ if __name__ == "__main__":
         else:
             patchManifestByFilename(sys.argv[2], sys.argv[3])
     elif option == "apk":
-        patchApk(sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5])
+        patchApk(sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5], sys.argv[6])
     else:
-        print("Usage: apk [fileIn] [fileOut] [keystore] [key alias] or xml [fileIn] [fileOut]")
+        print("Usage: apk [fileIn] [fileOut] [keystore] [key alias] [keystore password] or xml [fileIn] [fileOut]")
