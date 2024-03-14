@@ -210,7 +210,7 @@ def decode8(fs):
     (str_len, bytesRead) = decodeLength(fs, 1) # todo assert equals length
 
     # 2) the utf-8 string length
-    (strBytes, bytesRead2) = decodeLength(1)
+    (strBytes, bytesRead2) = decodeLength(fs, 1)
 
     str = fs.read(strBytes).decode("utf-8", "replace")
     if fs.read(1) != b"\x00":
