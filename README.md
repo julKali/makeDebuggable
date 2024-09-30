@@ -4,13 +4,13 @@
 
 ### XML-only
 
-`py makeDebuggable.py xml [file in] [file out]`
+`./makeDebuggable.py xml [file in] [file out]`
 
 This takes an existing AndroidManifest.xml file and outputs a version where debuggable is set to true.
 
 ### APK
 
-`Usage: apk [fileIn] [fileOut] [keystore] [key alias] [keystore password]`
+`./makeDebuggable.py apk [fileIn] [fileOut] [keystore] [key alias] [keystore password]`
 
 _This command requires zipalign and apksigner present in PATH. You can get them by installing `platform-tools` using [sdkmanager](https://developer.android.com/studio/command-line/sdkmanager)._
 
