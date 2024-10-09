@@ -597,17 +597,24 @@ def patchApk(fnIn, fnOut, keystore, keyAlias, keystorePass):
     print("Removing temporary file...")
     os.remove(outZip.filename)
 
+def usage():
+    print(f"Usage: { sys.argv[0] } apk [fileIn] [fileOut] [keystore] [key alias] [keystore password]")
+    print("or")
+    print(f"Usage: { sys.argv[0] } xml [fileIn] [fileOut]")
+    sys.exit(1)
 
 if __name__ == "__main__":
+    if len(sys.argv) < 2:
+        usage()
+
     option = sys.argv[1]
-    if option == "xml":
-        if len(sys.argv) == 3:
-            with open(sys.argv[2], "rb") as fIn:
-                with BytesIO() as fOut:
-                    patchManifest(fIn, fOut)
-        else:
-            patchManifestByFilename(sys.argv[2], sys.argv[3])
-    elif option == "apk":
+    if option == "xml" and len(sys.argv) == 3:
+        with open(sys.argv[2], "rb") as fIn:
+            with BytesIO() as fOut:
+                patchManifest(fIn, fOut)
+    elif option == "xml" and len(sys.argv) == 4:
+        patchManifestByFilename(sys.argv[2], sys.argv[3])
+    elif option == "apk" and len(sys.argv) == 7:
         patchApk(sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5], sys.argv[6])
     else:
-        print("Usage: apk [fileIn] [fileOut] [keystore] [key alias] [keystore password] or xml [fileIn] [fileOut]")
+        usage()
